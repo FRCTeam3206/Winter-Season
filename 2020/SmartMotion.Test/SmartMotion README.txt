@@ -1,0 +1,3 @@
+#SmartMotion.Test
+
+	The SmartMotion program uses the Spark Max Motor Controller and a Neo Brushless Motor to create a velocity or position profile. This is useful in speeding up initially without creating jerk in the robot and slowing down without a hard brake. By tuning the PID values and changing your max acceleration, you can change the time it takes to get up to speed and other variables. This is the more challenging version of acceleration limiting (shown in DriveTrain.Test).
