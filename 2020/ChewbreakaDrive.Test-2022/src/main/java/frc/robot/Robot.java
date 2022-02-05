@@ -54,7 +54,8 @@ import edu.wpi.first.wpilibj.ADIS16448_IMU;
  */
 public class Robot extends TimedRobot {
   // Drive Type
-  boolean XboxDrive = true;
+  boolean XboxDrive = false;
+  boolean arcadeDrive=true;
   // Joysticks
   Joystick leftStick;
   Joystick rightStick;
@@ -253,6 +254,7 @@ public class Robot extends TimedRobot {
 
     if (XboxDrive == false) {
       leftStick = new Joystick(0);
+      if(!arcadeDrive)
       rightStick = new Joystick(1);
       weaponStick = new XboxController(2);
     } else {
@@ -579,7 +581,10 @@ public class Robot extends TimedRobot {
   public void teleopInit() {
     compressor.enableDigital();
   }
-
+  private double applyDeadzone(double input, double zone){
+    if(input<zone&&input>-zone)return 0;
+    return input;
+  }
   @Override
   public void teleopPeriodic() {
     /*
@@ -594,10 +599,30 @@ public class Robot extends TimedRobot {
      * colorString); SmartDashboard.putString("FMS Color", gameData);
      */
     // Acceleration Limiting
-    leftPrime = primeConstant * driveStick.getLeftY()
-        + (1 - primeConstant) * Math.pow(driveStick.getLeftY(), 3); // The formula that this is making is
-    rightPrime = -(primeConstant * driveStick.getRightY()
-        + (1 - primeConstant) * Math.pow(driveStick.getRightY(), 3));
+    double right,left=0;
+    if(arcadeDrive){
+      if(XboxDrive){
+        right=driveStick.getLeftY()-driveStick.getLeftX();
+        left=driveStick.getLeftY()+driveStick.getLeftX();
+      }else{
+        right=applyDeadzone(leftStick.getY(),0)+applyDeadzone(leftStick.getX()/2,0);
+        left=applyDeadzone(leftStick.getY(),0)-applyDeadzone(leftStick.getX()/2,0);
+        SmartDashboard.putNumber("Right",right);
+        SmartDashboard.putNumber("Left",left);
+      }
+    }else{
+      if(XboxDrive){
+        right=driveStick.getRightY();
+        left=driveStick.getLeftY();
+      }else{
+        right=rightStick.getY();
+        left=leftStick.getY();
+      }
+    }
+    leftPrime = primeConstant * left
+        + (1 - primeConstant) * Math.pow(left, 3); // The formula that this is making is
+    rightPrime = -(primeConstant * right
+        + (1 - primeConstant) * Math.pow(right, 3));
 
     if (accelerationLimiting == true) {
       accelLimitedLeftGetY = leftPrime / accelDriveKonstant
@@ -612,9 +637,9 @@ public class Robot extends TimedRobot {
 
     // Right Joystick
     if (XboxDrive == false) {
-      if (rightStick.getRawButton(1)) { // Low Speed
+      if (leftStick.getRawButton(1)) { // Low Speed
         driveSol.set(Value.kForward);
-      } else if (rightStick.getRawButton(2)) { // High Speed
+      } else if (leftStick.getRawButton(2)) { // High Speed
         driveSol.set(Value.kReverse);
       } else {
         driveSol.set(Value.kOff); // Ensures Pistons are Off
