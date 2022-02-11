@@ -55,7 +55,7 @@ import edu.wpi.first.wpilibj.ADIS16448_IMU;
 public class Robot extends TimedRobot {
   // Drive Type
   boolean XboxDrive = false;
-  boolean arcadeDrive=true;
+  boolean arcadeDrive=false;
   // Joysticks
   Joystick leftStick;
   Joystick rightStick;
@@ -579,7 +579,8 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopInit() {
-    compressor.enableDigital();
+    // compressor.enableDigital();
+    compressor.disable();
   }
   private double applyDeadzone(double input, double zone){
     if(input<zone&&input>-zone)return 0;
