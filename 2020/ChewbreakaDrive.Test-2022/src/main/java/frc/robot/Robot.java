@@ -22,6 +22,7 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.math.filter.SlewRateLimiter;
 
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
@@ -55,7 +56,7 @@ import edu.wpi.first.wpilibj.ADIS16448_IMU;
 public class Robot extends TimedRobot {
   // Drive Type
   boolean XboxDrive = false;
-  boolean arcadeDrive=false;
+  boolean arcadeDrive=true;
   // Joysticks
   Joystick leftStick;
   Joystick rightStick;
@@ -586,6 +587,9 @@ public class Robot extends TimedRobot {
     if(input<zone&&input>-zone)return 0;
     return input;
   }
+
+  SlewRateLimiter forwardFilter = new SlewRateLimiter(3.0);
+
   @Override
   public void teleopPeriodic() {
     /*
@@ -601,13 +605,20 @@ public class Robot extends TimedRobot {
      */
     // Acceleration Limiting
     double right,left=0;
+    double forward = 0, turn = 0;
+
+    if(true) {
+      forward = -0.8 * applyDeadzone(leftStick.getZ(),0);
+      turn = 0.8 * applyDeadzone(leftStick.getY(),0);
+      chewbreakaDrive.arcadeDrive(forward, forwardFilter.calculate(turn));
+    } else {
     if(arcadeDrive){
       if(XboxDrive){
         right=driveStick.getLeftY()-driveStick.getLeftX();
         left=driveStick.getLeftY()+driveStick.getLeftX();
       }else{
-        right=applyDeadzone(leftStick.getY(),0)+applyDeadzone(leftStick.getX()/2,0);
-        left=applyDeadzone(leftStick.getY(),0)-applyDeadzone(leftStick.getX()/2,0);
+        right=applyDeadzone(leftStick.getY(),0)+applyDeadzone(leftStick.getZ()*.5,0);
+        left=applyDeadzone(leftStick.getY(),0)-applyDeadzone(leftStick.getZ()*.5,0);
         SmartDashboard.putNumber("Right",right);
         SmartDashboard.putNumber("Left",left);
       }
@@ -620,10 +631,12 @@ public class Robot extends TimedRobot {
         left=leftStick.getY();
       }
     }
-    leftPrime = primeConstant * left
-        + (1 - primeConstant) * Math.pow(left, 3); // The formula that this is making is
-    rightPrime = -(primeConstant * right
-        + (1 - primeConstant) * Math.pow(right, 3));
+    leftPrime = left;
+    rightPrime = -right;
+    // leftPrime = primeConstant * left
+    //     + (1 - primeConstant) * Math.pow(left, 3); // The formula that this is making is
+    // rightPrime = -(primeConstant * right
+    //     + (1 - primeConstant) * Math.pow(right, 3));
 
     if (accelerationLimiting == true) {
       accelLimitedLeftGetY = leftPrime / accelDriveKonstant
@@ -635,6 +648,7 @@ public class Robot extends TimedRobot {
       chewbreakaDrive.tankDrive(driveStick.getLeftY() * leftDriveCoef,
           driveStick.getRightY() * rightDriveCoef); // No acceleration limiting.
     }
+  }
 
     // Right Joystick
     if (XboxDrive == false) {
